@@ -1,0 +1,1003 @@
+openapi: 3.0.2
+info:
+  title: Receipt producer
+  version: 0.0.2
+  description: Прокси-сервис фискализации товаров
+
+paths:
+  /health/:
+    get:
+      tags:
+      - Проверка работоспособности
+      summary: /health/
+      description: Проверка базовой работоспособности сервиса
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /v2/receipt:
+    post:
+      tags:
+        - Фискализация чеков
+      summary: /v2/receipt
+      description: Метод фискализации прямых чеков
+      operationId: fiscal_receipt_generation_fiscal_receipt_generation_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ReceiptData"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReceiptGenerationResponse"
+        '202':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RequestAccepted"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BadRequestResponse"
+        '403':
+          description: Auth error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthErrorResponse"
+        '422':
+            description: Validation Error
+            content:
+              application/json:
+                schema:
+                  "$ref": "#/components/schemas/HTTPValidationError"
+        '500':
+          description: Internal Server Error
+          content:
+              application/json:
+                schema:
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+  /v2/refund_receipt:
+    post:
+      tags:
+        - Фискализация чеков
+      summary: /v2/refund_receipt
+      description: Метод фискализации возвратных чеков
+      operationId: fiscal_receipt_refund_fiscal_receipt_refund_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/RefundData"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReceiptRefundResponse"
+        '202':
+            description: Request accepted
+            content:
+              application/json:
+                schema:
+                  "$ref": "#/components/schemas/RefundAccepted"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BadRefundRequestResponse"
+        '403':
+         description: Auth error
+         content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/AuthErrorResponse"
+        '404':
+          description: Reciept not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NotFoundByPaymentIdResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerErrorResponse"
+  /v2/qr_payment:
+    post:
+      tags:
+        - Передача чека  оплаты по QR-коду в налоговую
+      summary: /v2/qr_payment
+      description: Метод отправки информации о чеке оплаты по QR-коду на местах в налоговую. Использование метода необходимо согласовывать с командой разработки ОФД Uzum.
+      operationId: save_qr_code_url_save_qr_code_url_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/QrPaymentRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+        '202':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/QrPaymentRequestAccepted"
+        '400':
+          description: Bad Request Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BadQrPaymentRequestResponse"
+        '403':
+          description: Auth Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthErrorResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerErrorResponse"
+  /v2/receipt/{operation_id}/receipt_url:
+    get:
+      summary: /v2/receipt/{operation_id}/receipt_url
+      description: Метод для получения ссылки на фискальный чек
+      operationId: get_receipt_url
+      tags:
+        - Фискализация чеков
+      parameters:
+        - in: path
+          name: operation_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор операции по чеку (генерируется на стороне мерчанта)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GetReceiptURLResponse"
+        '202':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/WaitingForReceiptURLResponse"
+        '400':
+          description: There is no URL for prepaid/credit receipt
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NoURLForPrepaidCreditReceipt"
+        '403':
+          description: Auth error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthErrorResponse"
+        '404':
+          description: Reciept not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NotFoundByPAOResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+        '500':
+          description: Internal Server Error
+components:
+  schemas:
+    RequestAccepted:
+      title: Request Accepted
+      required:
+      - message
+      - code
+      type: object
+      properties:
+        payment_id:
+          title: Payment Id
+          type: string
+          format: uuid
+          example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор платежа ЭПС. Возвращается в случае оплаты наличкой (в запросе на фискализацию нет payment_id)
+        code:
+          title: Code
+          type: integer
+          description: >
+            Possible values
+             * 0 - Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * 1 - Error occurred in communications with ofd.soliq.uz. We will retry it later. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * 2 - Didn't fiscalized receipt yet. We're in process of retrying it. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+        message:
+          title: Message
+          type: string
+          description: >
+            Possible values
+             * Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * Error occurred in communications with ofd.soliq.uz. We will retry it later. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * Didn't fiscalized receipt yet. We're in process of retrying it. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+          example: "Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks"
+    RefundAccepted:
+      title: Refund Request Accepted
+      required:
+        - message
+        - code
+      type: object
+      properties:
+        code:
+          title: Code
+          type: integer
+          description: >
+            Possible values
+             * 0 - Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * 1 - Error occurred in communications with ofd.soliq.uz. We will retry it later. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * 2 - Didn't fiscalized receipt yet. We're in process of retrying it. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+        message:
+          title: Message
+          type: string
+          description: >
+            Possible values
+             * Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * Error occurred in communications with ofd.soliq.uz. We will retry it later. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+             * Didn't fiscalized receipt yet. We're in process of retrying it. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks
+          example: "Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks"
+    WaitingForReceiptURLResponse:
+      title: Waiting For Receipt URL Response
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          title: message
+          type: string
+          example: "Your request was accepted, but receipt still not has been fiscalized. Retry later, please"
+    NoURLForPrepaidCreditReceipt:
+      title: No URL For Prepaid/Credit Receipt
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          title: message
+          type: string
+          example: "URL for prepaid/credit receipt does not exists"
+    NotFoundByPaymentIdResponse:
+      title: Reciept not found by PaymentId
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          title: message
+          type: string
+          example: "Receipt with {payment id} payment id was not found"
+    NotFoundByPAOResponse:
+      title: Reciept not found by PAO
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          title: message
+          type: string
+          example: "Receipt with {payment id} payment id and {operation id} operation id was not found"
+    BadRequestResponse:
+      title: Bad Request
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          enum: [ 1, 2 ]
+          description: >
+            Sort order:
+             * 1 - Invalid spic/package code. Please check values and resend request
+             * 2 - Receipt with the same payment_id and receipt_type was already send. Please check values and resend request
+        message:
+          type: string
+          example: "Invalid spic/package code. Please check values and resend request"
+    BadRefundRequestResponse:
+      title: Bad Refund Request
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Refund is unavailable due to expiration"
+    InternalServerErrorResponse:
+      title: Internal Server Error
+      required:
+        - message
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Server encountered an unexpected condition that prevented it from fulfilling the request. Please, contact support"
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            "$ref": "#/components/schemas/ValidationError"
+    ReceiptData:
+      title: ReceiptData
+      required:
+      - operation_id
+      - date_time
+      - cash_amount
+      - card_amount
+      - items
+      type: object
+      properties:
+        payment_id:
+          title: Payment Id
+          type: string
+          format: uuid
+          example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор платежа ЭПС
+        operation_id:
+          title: Operation Id
+          type: string
+          format: uuid
+          example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор операции по чеку (генерируется на стороне мерчанта)
+        date_time:
+          title: Date Time
+          type: string
+          description: Дата и Время платежа в формате ISO 8601 cо сдвигом часового пояса. Не должен быть старше 24ч от времени запроса
+          format: date-time
+          example: "2023-08-07T20:00:35+05:00"
+        cash_amount:
+          title: Cash Amount
+          type: integer
+          minimum: 0
+          description: Сумма оплаты наличными, в тийин (до вычета скидки)
+        card_amount:
+          title: Card Amount
+          type: integer
+          minimum: 0
+          description: Сумма оплаты по карте, в тийин (до вычета скидки)
+        phone_number:
+          title: Phone Number
+          type: string
+          maxLength: 12
+          example: 998991234567
+          description: Номер телефона клиента. Параметр необязательный и при его отсутствии автокэшбэк будет невозможен.
+        receipt_type:
+          title: Receipt Type
+          default: 0
+          description: >
+            Тип чека:
+             * 0 - Sale
+             * 1 - Prepaid
+             * 2 - Credit
+          type: integer
+          enum: [ 0, 1, 2 ]
+        items:
+          title: Items
+          type: array
+          items:
+            "$ref": "#/components/schemas/ReceiptDataItem"
+          description: Список товаров
+    AuthErrorResponse:
+      title: AuthErrorResponse
+      type: object
+      properties:
+        message:
+          title: Operation Id
+          type: string
+          format: string
+          description: >
+            Возможные значения:
+             * Multiple auth headers are defined
+             * Auth header is not defined
+             * User is not found
+    ReceiptDataCommissionInfo:
+      title: ReceiptDataCommissionInfo
+      type: object
+      properties:
+        TIN:
+          title: Tin
+          type: string
+          description: ИНН. В рамках запроса должен быть передан ИНН (TIN) или ПИНФЛ (ПИНФЛ). Оба поля не могут быть пустыми
+        PINFL:
+          title: Pinfl
+          type: string
+          description: ПИНФЛ. В рамках запроса должен быть передан ИНН (TIN) или ПИНФЛ (ПИНФЛ). Оба поля не могут быть пустыми
+    ReceiptDataItem:
+      title: ReceiptDataItem
+      required:
+      - product_name
+      - price
+      - count
+      - spic
+      - package_code
+      - vat_percent
+      type: object
+      properties:
+        product_name:
+          title: Product Name
+          type: string
+          description: Название товара
+          maxLength: 63
+        price:
+          title: Price
+          type: integer
+          minimum: 0
+          description: Сумма в тийин за единицу товара
+        discount:
+          title: Discount
+          type: integer
+          minimum: 0
+          description: Сумма общей скидки с учетом кол-ва товаров, в тийин
+        voucher:
+          title: Voucher
+          type: integer
+          minimum: 0
+          description: Сумма общей скидки маркетплейса с учетом кол-ва товаров, в тийин не вычитается из суммы чека но клиент не оплачивает сумму скидки ее на чекауте
+        count:
+          title: Count
+          type: number
+          mininum: 0
+          format: double
+          example: 1.998
+          description: Количество товара
+        spic:
+          title: Spic
+          type: string
+          description: Код ИКПУ
+        units:
+          title: Units
+          type: integer
+          description: Код ед.изм
+          default: 1
+        package_code:
+          title: Package Code
+          type: string
+          description: Код упаковки
+          minLength: 0
+          maxLength: 20
+        vat_percent:
+          title: Vat Percent
+          type: integer
+          minimum: 0
+          description: Ставка НДС %
+        commission_info:
+          title: Commission Info
+          allOf:
+          - "$ref": "#/components/schemas/ReceiptDataCommissionInfo"
+          description: Данные комитента
+        labels:
+          title: Labels
+          type: array
+          items:
+            type: string
+            minLength: 20
+            maxLength: 90
+          description: Массив маркировок товаров.
+          example: [ 147801350092774673, 147801350092774673 ]
+    ReceiptGenerationResponse:
+      title: ReceiptGenerationResponse
+      type: object
+      required:
+        - payment_id
+      properties:
+        receipt_url:
+          title: Receipt URL
+          type: string
+          example: "https://ofd.soliq.uz/epi?t=EZ000000000296&r=51&c=20230807182725&s=176112857133"
+          description: Ссылка на чек. Отсутствует при авансовом/кредитном чеке чеке
+        payment_id:
+          title: Payment Id
+          type: string
+          format: uuid
+          example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор платежа ЭПС. Возвращается в случае оплаты наличкой (в запросе на фискализацию нет payment_id)
+    ReceiptRefundResponse:
+      title: RefundReceiptGenerationResponse
+      type: object
+      required:
+        - receipt_url
+      properties:
+        receipt_url:
+          title: Receipt URL
+          type: string
+          example: "https://ofd.soliq.uz/epi?t=EZ000000000296&r=51&c=20230807182725&s=176112857133"
+          description: Ссылка на чек. Отсутствует при авансовом/кредитном чеке чеке
+    GetReceiptURLResponse:
+      required:
+        - receipt_url
+      title: GetReceiptURLResponse
+      type: object
+      properties:
+        receipt_url:
+          title: Receipt Url
+          type: string
+    RefundData:
+      title: RefundData
+      required:
+      - payment_id
+      - operation_id
+      - cash_amount
+      - card_amount
+      - date_time
+      - items
+      type: object
+      properties:
+        payment_id:
+          title: Payment Id
+          type: string
+          format: uuid
+          example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор платежа ЭПС
+        operation_id:
+          title: Operation Id
+          type: string
+          format: uuid
+          example: 61e057d9-b737-42fa-ae33-614a284a5a92
+          description: Уникальный идентификатор операции по чеку
+        cash_amount:
+          title: Cash Amount
+          type: integer
+          minimum: 0
+          description: Сумма возврата наличными, в тийин
+        card_amount:
+          title: Card Amount
+          type: integer
+          minimum: 0
+          description: Сумма возврата на карту, в тийин
+        date_time:
+          title: Date Time
+          type: string
+          description: Время возврата. Не должен быть старше 24ч от времени запроса
+          format: date-time
+        items:
+          title: Items
+          type: array
+          items:
+            "$ref": "#/components/schemas/ReceiptDataItem"
+          description: Список товаров к возврату
+    ValidationError:
+      title: ValidationError
+      required:
+      - loc
+      - msg
+      - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+    QrPaymentRequest:
+      title: QR Payment Request
+      required:
+        - payment_id
+        - operation_id
+        - paid_sum
+        - date_time
+        - commission_info
+        - phone_number
+        - receipt_info
+      type: object
+      properties:
+        payment_id:
+          title: QR Payment Id
+          type: string
+          maxLength: 36
+          example: "f8ba6f5a97934a8bb36d0fefb9684d0d"
+          description: Уникальный идентификатор QR-платежа ЭПС
+        operation_id:
+          title: QR Operation Id
+          type: string
+          format: uuid
+          example: "db95b04e-add0-427d-a1f8-6b79eec0efe3"
+          description: Уникальный идентификатор операции по QR-платежу
+        paid_sum:
+          title: Paid Sum
+          type: integer
+          min: 1
+          example: 256675
+          description: Сумма оплаты в тийин
+        date_time:
+          title: Date Time
+          type: string
+          description: Время платежа (UTC +5:00). Формат ГГГГ-ММ-ДД ЧЧ:МН:СС
+          format: date-time
+          example: "2022-06-21 12:26:54"
+        commission_info:
+          title: Commission Info
+          allOf:
+            - "$ref": "#/components/schemas/ReceiptDataCommissionInfo"
+          description: Данные комитента
+        phone_number:
+          title: Phone Number
+          type: string
+          description: Номер телефона клиента
+          maxLength: 12
+        sale_point_address:
+          title: Sale Point Address
+          description: Адрес точки продажи
+          type: string
+          maxLength: 128
+          example: "г. Ташкент, Чиланзарский район, улица Мукимий, 166."
+        receipt_info:
+          "$ref": "#/components/schemas/ReceiptInfo"
+    ReceiptInfo:
+      title: Receipt Info
+      type: object
+      description: Информация о зарегистрированном чеке в ФМ
+      required:
+        - terminal_id
+        - receipt_seq
+      properties:
+        terminal_id:
+          type: string
+          maxLength: 14
+          description: Номер ФМ
+          example: "UZ000000000002"
+        receipt_seq:
+          type: string
+          maxLength: 16
+          description: Номер чека
+          example: "123"
+    QrPaymentRequestAccepted:
+      title: QR Payment Request Accepted
+      required:
+      - message
+      - code
+      type: object
+      properties:
+        code:
+          title: Code
+          type: integer
+          description: >
+            Possible values
+             * 0 - Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and QR payment will be send as soon as ofd.soliq.uz is available. You can retry request later
+             * 1 - Error occurred in communications with ofd.soliq.uz. We will retry it later
+             * 2 - Didn't send QR payment yet. We're in process of retrying it
+        message:
+          title: Message
+          type: string
+          description: >
+            Possible values
+             * Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and QR payment will be send as soon as ofd.soliq.uz is available. You can retry request later
+             * Error occurred in communications with ofd.soliq.uz. We will retry it later
+             * Didn't send QR payment yet. We're in process of retrying it
+          example: "Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and QR payment will be send as soon as ofd.soliq.uz is available. You can retry request later"
+    BadQrPaymentRequestResponse:
+      title: Bad QR Payment Request
+      required:
+      - message
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Sale QR payment with the same payment_id was already send"
+
+
+tags:
+  - name: Термины и определения
+    description: |      
+      **ОФД** - оператор фискальных данных.
+
+      **ГНК** - Государственный налоговый комитет Республики Узбекистан.
+      
+      **НИЦ** - Научно-информационный центр новых технологий ГНК Республики Узбекистан.
+      
+      **API-ключ** (API key) -  уникальный идентификатор, который используется для аутентификации и авторизации пользователей при обращении к API OFD Uzum. Используется для предоставления доступа к ресурсам и функциональностям API. Генерируется и выдается командой разработки API ОФД Uzum для каждого мерчанта. 
+      API key является стандартным способом авторизации API OFD Uzum.
+
+      **Типы чеков** - на текущий момент сервис может фискализировать, все типы чеков:
+
+        * Продажа - Покупатель при расчетах с продавцом полностью оплачивает стоимость и получает товар (услугу), в результате фискализации возвращается ссылка на чек с qr-кодом и фискальным признаком.
+
+        * Возврат (частичный/полный) - Покупатель возвращает ранее приобретенный товар, а продавец – деньги, полученные в счет оплаты товара.  Для фискализации чека возврата должны быть выполнены следующие условия:
+          * paymentId чека возврата = paymentId чека продажи,
+          * Чек продажи был фискализирован ранее.
+      
+        * Аванс -  Покупатель предоплачивает услугу или товар,  после реализации товара или оказание услуги формируется чек продажи, тем самым закрывая авансовый платёж. Для данного типа чека ГНК не возвращает ссылку на фискализированный чек. Cервиса Uzum OFD может сгенерировать чек (без qr-кода и фискального признака) и предоставить ссылку мерчанту. В случае необходимости подключения опции, сообщите об этом в чате Telegram.
+
+        * Кредит - Продавец принимает от покупателя платеж по договору рассрочки (кредита). Для данного типа чека ГНК не возвращает ссылку на фискализированный чек. Cервиса Uzum OFD может сгенерировать чек (без qr-кода и фискального признака) и предоставить ссылку мерчанту. В случае необходимости подключения опции, сообщите об этом в чате Telegram.
+
+      **Оплата по QR - коду (QR)** -  При данном методе оплаты покупатель сканирует QR-код, вводит сумму покупки и оплачивает товар или услугу. После оплаты кассир получает уведомление и оплата считается завершенной. Фискализиция при этом методе производится платежной системой, которая предоставляет QR-код, но мерчант обязан передать информацию о чеке в налоговую.
+
+      **Сallback** - функция отправки результатов фискализации чеков и qr-в мерчанту, для случаев если не получен ответ от налоговой в режиме on-line. Для подключения опции, мерчанту необходимо сообщить в чат Telegram и предоставить ссылку (host), на которую будут приниматься результаты.
+
+  - name: Инструкция по тестированию сервиса ОФД Uzum
+    description: |    
+      Необходимо провести тестовую интеграцию с сервисом. 
+
+      1. В чате Telegram запросить  АPI-KEY, который необходимо передавать в заголовках запросов.
+      _(В случае необходимости mtls, сообщите об этом в чате Telegram)._
+
+      2. Для проведения тестовой интеграции используется хост:https://test-ofd.ipt-merch.com, на котором доступны методы
+
+          2.1 Фискализации чеков продажи, метод /v2/receipt (описание параметров запросов см. ниже):
+
+            * Чек с несколькими позициями (Несколько объектов в коллекции items),
+            * _Если применимо_ :Чек со скидкой (значение параметра items.discount>0) 
+            * _Если применимо_ :Чек со скидкой от маркетплейса (Скидка не вычитается из суммы чека, items.voucher>0)
+          
+          2.2 Фискализации чеков возврата, метод /v2/refund_receipt: 
+
+            * Чек с несколькими позициями (Несколько объектов в коллекции items),
+            * _Если применимо_ :Чек со скидкой (значение параметра items.discount>0)
+            * _Если применимо_ :Чек со скидкой от маркетплейса (Скидка не вычитается из суммы чека, items.voucher>0)
+
+          2.3 Получения готовой ссылки на чек, методом /v2/receipt_url/{operation_id}. 
+          
+          2.4 В случае наличия договоренности с командой о передаче информации по чекам оплаты по qr-коду на местах, необходимо также протестировать отправку запросов метода /v2/qr_payment.
+      
+      3. После завершения процесса тестирования, необходимо предоставить ссылки на готовые чеки в чате telegram для подтверждения проведения всех необходимых проверок.
+
+      4. После подтверждения завершения тестирования необходимо запросить API-Key в чате Telegram для продуктивной среды. Для запросов на продуктивной среде используется хост:https://ofd-key.inplat-tech.com 
+
+
+  - name: Описание параметров запросов
+    description: |    
+      ## Методы фискализации чеков
+     
+      Параметры запросов методов фискализации /v2/receipt (продажа) и /v2/refund_receipt (возврат) идентичны и описаны ниже
+     
+      В теле запроса передаются параметры
+
+      | Параметр            | Описание                                                                                    | Пример                                    | Дополнительная информация |
+      | ------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------- |
+      | payment_id          | Уникальный идентификатор платежа Электронной платёжной системы, в формате UUID       | "0580f310-5a3f-427e-93f5-3694396122e9"    | При оплате картой, вам всегда необходимо передавать нам значение payment_id (это order_id от Uzum checkout). При оплате наличными, значение payment_id генерируется на стороне Узум банка. При необходимости вы можете сами генерировать значение payment_id для оплаты наличными. В таком случае, необходимо оповестить техническую команду Узум банка. При фискализации чека возврата, необходимо передавать тот же payment_id, который относится к чеку продажи. |
+      | operation_id        | Уникальный идентификатор операции по чеку, в формате UUID. operation_id должен быть уникальным для каждой операции. | "d2f0b520-188d-42b4-8251-f870e3c52846"    | Значение operation_id вам необходимо генерировать самостоятельно. Это должно быть уникальное значение для каждой операции. При повторных попытках отправить запрос нужно передавать те же operation_id и payment_id, что и ранее для этого запроса. Каждый новый возврат в рамках одной покупки должен иметь уникальное значение operation_id. Если запрос новый, то payment_id тот же, а operation_id - новый. |
+      | date_time | Время осуществления платежа. | "2023-08-07T18:31:29.620807+05:00" | Данные должны быть переданы на фискализацию в течение 24 часов с момента проведения операции и не больше текущего времени, т.е. дата осуществления платежа не может быть в будущем. Таймзона - необязательный параметр. Если в запросе не передана таймзона, то сервис интерпретирует дату и время по г. Ташкент. Пример:Дата платежа 01.11.2023 в 14:00 по Ташкенту. 1. "2023-11-01T14:00:00+05:00" - с таймзоной. 2. "2023-11-01T14:00:00" - без таймзоны. 3. "2023-11-01T09:00:00Z".|
+      | receipt_type        | Тип чека.                                                                                    | 0 - Sale; 1 - Prepaid; 2 - Credit                     | Если у вас чек имеет тип продажа/возврат, то поле receipt_type можно не передавать. Ссылку на чек с фискальным признаком можно получить, только для типа чека "Продажа/возврат". |
+      | cash_amount         | Сумма оплаты наличными, в тийинах. Если оплата прошла по карте, то поле cash_amount все равно нужно отправлять, но значение его будет равно 0. | 100000000                                 | При оплате наличными в данное поле необходимо передавать сумму чека до применения скидки. |
+      | card_amount         | Сумма оплаты картой, в тийинах.                                                           | 100000000                                 | При оплате картой в данное поле необходимо передавать сумму чека до применения скидки. |
+      | phone_number        | Номер телефона клиента.                                                                    | "998940202903"                            | В номере телефона необходимо передавать только цифры (без каких-либо символов). При передаче узбекского номера телефона (с кодом 998) будет проводиться автоматическое начисление кэшбека в soliq.uz, в случае передачи номера телефона с другим кодом, кэшбек не начисляется. |
+      | items               | Список самих товаров или услуг.                                                           | items - это коллекция. Описание параметров коллекции см. в таблице Items | В данном объекте необходимо передавать параметры товаров/услуг, которые нужно отобразить в чеке. |
+      
+        ### Коллекция items
+        В коллекции передается список товаров, которые необходимо отобразить в чеке. Для каждого товара создается отдельный объект".
+        
+        _Примечание_: в коллекции могут передаваться товары с одинаковым наименованием.
+
+      | Параметр            | Описание                                                                                    | Пример                                    | Дополнительная информация |
+      | ------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------- |
+      | product_name        | Наименование товара от партнёра Узум банка. Обязательное поле. _Примечание_: в чеке может быть несколько товаров с одинаковым наименованием.                             | "Almond-0"                                | Длина названия должна быть не более 63 символов. Это ограничение ГНК. |
+      | price               | Сумма за единицу товара, в тийинах.                                                       | 20000000                                 | В данном поле необходимо указать стоимость одной единицы товара до вычета возможных скидок. Допустим клиент набрал в корзину пять одинаковых шоколадок (одной марки). Здесь, в этом поле, указывается стоимость одной шоколадки. |
+      | discount            | Скидка с учётом количества товара. Эта сумма вычитается из общей суммы к оплате.           | Необязательное поле. Пример: 5000000     | Сумма скидки не должна превышать стоимость переданного количества одинакового товара. |
+      | count               | Количество товара.                                                                         | 1                                         | Количество товара не может быть отрицательным или нулевым значением. |
+      | spic                | ИКПУ - идентификационный код продукции и услуг для Узбекистана.                            | "37248327943670935"                       | Код из справочника Государственного налогового комитета Республики Узбекистан. |
+      | units               | Код единицы измерения. Это поле не используется.                                           | 1122                                      | Код единицы измерения. Поле необязательное, его значение можно не передавать, т. к. сейчас значение этого поля интегрировано в значение поля package_code. |
+      | package_code        | Код упаковки.                                                                              | Обязательное поле. Пример: "1234567"                                   | Значение в данное поле передается в соответствии со справочником ГНК. |
+      | vat_percent         | Налоговая ставка.                                                                         | 0                                         | Значение данного поля передается с учетом наличия или отсутствия льгот на данную категорию товара. В случае если в поле передано ошибочное значение налоговой ставки, возможно со стороны ГНК будет наложен штраф на мерчанта.|
+      | commission_info     | Данные комитента. В «commission_info» обязательно должно присутствовать либо поле TIN не пустое, либо PINFL не пустое. TIN - для юридических лиц. PINFL - для физических лиц. | "commission_info":{"TIN":"", "PINFL":"11111111111111" } | Для корректного расчета НДС необходимо передавать одно из двух значений - TIN - для юридических лиц, PINFL- для физических лиц. |
+      | voucher             | Скидка от маркетплэйса, в тийинах.                                                        | Необязательное поле                       | В данное поле передаётся сумма скидки для товара с учетом его количества. Например, в чеке 2 вида товара: шоколад и молоко. Например, клиент купил 2 сникерса и 1 коробку молока. “voucher” в этом примере будет учитываться на сумму на 2 сникерса. На 1 коробку молока будет другой “voucher”. “voucher” не вычитается из суммы к оплате, но прописывается в чеке. |
+      | labels              | Массив с маркировками товаров. Обязательно для товаров следующих групп: табак, алкоголь, пиво, лекарства, бытовая техника, вода и прохладительные напитки.                                                       | Необязательное поле                       | В данный массив передаются маркировки товаров, количество строк должно быть равное количеству товаров. Например, в чеке 2 бутылки воды, в labels должно передаться 2 уникальные маркировки: labels:["123","345"]  |
+       ### Пример запроса
+      
+            headers:{
+              "host": "0.0.0.0:8080",
+              "accept": "*/*",
+              "connection": "keep-alive",
+              "user-agent": "python-requests/2.31.0",
+              "content-type": "application/json",
+              "content-length": "585",
+              "accept-encoding": "gzip, deflate",
+              "x-api-key": "******"
+                     }
+             body:{
+              "date_time": "2023-11-10 11:35:08.619395+00:00",
+              "payment_id": "f5cdb113-9ddf-4380-b00f-665319707e6f",
+              "card_amount": 1000100,
+              "cash_amount": 0,
+              "operation_id": "d4f011e1-59cc-4ba1-976d-21ea48d471e2",
+              "phone_number": "998111112233",
+              "receipt_type": 0,
+              "items": [
+                {
+                  "spic": "1111111111111111",
+                  "count": 2,
+                  "price": 1000000,
+                  "labels": ["010000004780107321RCX3nmRr8Ix2T","010000004780107321RCX3nmR"]
+                  "units": 1,
+                  "voucher": 0,
+                  "discount": 0,
+                  "vat_percent": 0,
+                  "package_code": "1234567",
+                  "product_name": "Товар 1",
+                  "commission_info": {
+                  "TIN": "123456789",
+                  "PINFL": ""
+                    }
+                  },
+                {  
+                  "spic": "1111111111111111",
+                  "count": 1,
+                  "price": 1000000,
+                  "units": 1,
+                  "voucher": 0,
+                  "discount": 0,
+                  "vat_percent": 0,
+                  "package_code": "1234567",
+                  "product_name": "Товар 1",
+                  "commission_info": {
+                  "TIN": "123456789",
+                  "PINFL": ""
+                    }
+                  },
+                   {  
+                  "spic": "1111111111111111",
+                  "count": 3,
+                  "price": 2000000,
+                  "units": 1,
+                  "voucher": 0,
+                  "discount": 0,
+                  "vat_percent": 0,
+                  "package_code": "1234567",
+                  "product_name": "Товар 2",
+                  "commission_info": {
+                  "TIN": "123456789",
+                  "PINFL": ""
+                    }
+                  }
+                ]
+
+
+      ## Метод получения ссылки на фискализированный чек
+
+      В URL ссылки необходимо передавать operation_id, запрашиваемого чека: {host}/v2/receipt_url/0000a00a-0000-0aa0-0000-0a00a0000000
+
+
+      ## Методы отправки информации чека оплаты на местах по qr-коду
+
+      Метод /v2/qr_payment используется для отправки информации чеков оплаты по qr-коду на местах. Фискализация таких чеков происходит на стороне оператора, предоставляющего QR-код.
+      В случае использования метода, необходимо заранее предупредить команду разработки.
+
+
+      | Параметр            | Описание                                                                                    | Пример                                    | Дополнительная информация |
+      | ------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------- |
+      | payment_id          | Уникальный идентификатор платежа Электронной платёжной системы , в формате UUID .          | "0580f310-5a3f-427e-93f5-3694396122e9"    | При оплате картой, вам всегда необходимо передавать нам значение payment_id (это order_id от Uzum checkout). При оплате наличными, значение payment_id генерируется на стороне Узум банка. При необходимости вы можете сами генерировать значение payment_id для оплаты наличными. В таком случае, необходимо оповестить техническую команду Узум банка. При фискализации чека возврата, необходимо передавать тот же payment_id, который относится к чеку продажи. |
+      | operation_id        | Уникальный идентификатор операции по чеку, в формате UUID. operation_id должен быть уникальным для каждой операции. | "d2f0b520-188d-42b4-8251-f870e3c52846"    | Значение operation_id вам необходимо генерировать самостоятельно. Это должно быть уникальное значение для каждой операции. При повторных попытках отправить запрос нужно передавать те же operation_id и payment_id, что и ранее для этого запроса. Каждый новый возврат в рамках одной покупки должен иметь уникальное значение operation_id. Если запрос новый, то payment_id тот же, а operation_id - новый. |
+      | paid_sum         | Сумма оплаты по чеку, в тийинах.  | 100000000                                 | В данное поле необходимо передавать сумму чека. |
+      | date_time           | Время осуществления платежа.                                                               | "2023-08-07T18:31:29.620807+05:00"         | аймзона - необязательный параметр. Если в запросе не передана таймзона, то сервис интерпретирует дату и время по г. Ташкент. Пример:Если дата платежа 01.11.2023 в 14:00 по Ташкенту. 1. "2023-11-01T14:00:00+05:00" - с таймзоной. 2. "2023-11-01T14:00:00" - без таймзоны. 3. "2023-11-01T09:00:00Z". |
+      | commission_info     | Данные комитента. В «commission_info» обязательно должно присутствовать либо поле TIN не пустое, либо PINFL не пустое. TIN - для юридических лиц. PINFL - для физических лиц. | "commission_info":{"TIN":"", "PINFL":"11111111111111" } | Для корректного расчета НДС необходимо передавать одно из двух значений - TIN - для юридических лиц, PINFL- для физических лиц. |
+      | phone_number        | Номер телефона клиента.                                                                    | "998940202903"                            | В номере телефона необходимо передавать только цифры (без каких-либо символов). При передаче узбекского номера телефона (с кодом 998) будет проводиться автоматическое начисление кэшбека в soliq.uz, в случае передачи номера телефона с другим кодом, кэшбек не начисляется.|
+      | sale_point_address         | Адрес точки продажи.                                                           | 100000000                                 | При оплате картой в данное поле необходимо передавать сумму чека до применения скидки. |
+      | receipt_info         | Информация о зарегистрированном чеке в Фискольном модуле.                                                           | "receipt_info":{"terminal_id":"EP000000000000", "receipt_seq":"11111111111111" }                                 | В receipt_info - необходимо передавать № фискального модуля (терминала) и номер чека.  |
+
+
+       ### Пример запроса
+      
+            headers:{
+              "host": "0.0.0.0:8080",
+              "accept": "*/*",
+              "connection": "keep-alive",
+              "user-agent": "python-requests/2.31.0",
+              "content-type": "application/json",
+              "content-length": "585",
+              "accept-encoding": "gzip, deflate",
+              "x-api-key": "******"
+                     }
+             body:{
+              "paid_sum": 1000000,
+              "date_time": "2022-10-03 14:26:54",
+              "is_refund": "False",
+              "payment_id": "1",
+              "operation_id": "42c02d9a-6e5d-47ed-b623-9036d23bc65e",
+              "phone_number": "998111112223",
+              "receipt_info": {
+                "receipt_seq": 1,
+                "terminal_id": "UZ000000000000"
+                  },
+              "commission_info": {
+                "TIN": "123456789"
+                }
+              }
+  - name: Обработка ошибок сервиса
+    description: |    
+      |Код ответа|Пример|Дополнения|Возможные действия|
+      |--- | ---- | ---- | ---- |
+      |200 Successful Response|{"receipt_url": "https://ofd.soliq.uz/epi?t=EZ000000000296&r=51&c=20230807182725&s=176112857133", "payment_id": "61e057d9-b737-42fa-ae33-614a284a5a92"}|Метод отработал успешно|Мерчант может вызвать метод повторно с теми же значениями payment_id и operation_id  Вызвать метод /v2/receipt_url/{operation_id}.|
+      |202 Request Accepted|{"payment_id": "61e057d9-b737-42fa-ae33-614a284a5a92","code": 0,"message": "Didn't receive a timely response from an ofd.soliq.uz server. Your request was accepted and receipt receipt will be fiscalized as soon as ofd.soliq.uz is available. You can either retry request later, call /v2/receipt_url/{operation_id} method or subscribe to callbacks"}|Ваш запрос принят и чек будет фискализирован позднее.|Мерчант может вызвать метод повторно с теми же значениями payment_id и operation_id. Вызвать метод /v2/receipt_url/{operation_id}.   Подписаться на callback-и, для этого обратитесь в чат Telegram|
+      |400 Bad Request|{"code": 1,"message": "Invalid spic/package code. Please check values and resend request"}|Ошибочный код ИКПУ или код упаковки|Перепроверьте значения items.spic и items.package_code и отправьте запрос повторно с новыми значениями payment_id и operation_id.|
+      |400 Bad Request|{"code": 2,"message": "Receipt with the same payment_id and receipt_type was already send. Please check values and resend request"}|Попытка отправки|Перепроверьте значения payment_id и reciept_type: по одному и тому же payment_id может быть только один чек со значением reciept_type=0. Попробуйте отправить запрос новым payment_id.|
+      |403 Auth Error|{"message": "Auth header is not defined"}|Не пройдена аутентификация|Перепроверьте заголовки запроса (headers), должен быть только один параметр авторизации: apiKey или fingerprint. Если ошибка повторяется, обратитесь в чат Telegram|
+      |422 Validation Error|{"detail": [{"loc": ["body","date_time"],"msg": "date_time should be within 24 hours","type": "value_error"},{"loc": ["body","phone_number"],"msg": "ensure this value has at most 12 characters","type": "value_error.any_str.max_length","ctx"{"limit_value": 12} }]}|Данные не прошли валидацию|Перепроверьте параметры запроса, которые вернулись в detail.loc  и отправьте запрос повторно.|
+      |500 Internal Server Error|{"message": "Server encountered an unexpected condition that prevented it from fulfilling the request. Please, contact support"}|Непредвиденная ошибка сервиса|Попробуйте выполнить запрос с теми же payment_id и operation_id повторно, в случае если ошибка повторяется выполните запрос через некоторое время. Просьба каждый раз увеличивать время между попытками, это поможет избежать избыточных вызовов. (Например: повторный запрос выполняется через 10сек., 15 сек., 30 сек., 1 мин. и тд.) Подпишитесь на [Telegram-канал](https://t.me/+1PD-jWBuj20wNTcy) для оперативного получения сообщений о текущих изменениях, аварийных ситуациях и сроках исправлений багов.|
+
+  - name: Telegram - канал
+    description: |  
+       Подписывайтесь на наш [Telegram-канал](https://t.me/+1PD-jWBuj20wNTcy) для оперативного получения информации о предстоящих доработках сервиса, аварийных ситуациях и сроках исправлений.
+
+  - name: Обновления
+    description: |
+      ## Маркировка товаров
+      
+      В связи с изменениями в законодательстве республики Узбекистан, согласно постановлению о введении системы обязательной цифровой маркировки товаров с **01 марта 2024** года при фискализации чеков обязательно предоставление в Государственную налоговую комиссию кодов маркировок для следующих групп товаров:
+
+        1. табачная продукция;
+        2. алкогольная продукция (кроме пива и пивных напитков);
+        3. пивная продукция (пиво и пивные напитки);
+        4. бытовая техника и электроника;
+        5. лекарственные средства;
+        6. **вода и прохладительные напитки.**
+
+      Внесены изменения в методы **v2/receipt**  и **/v2/refund_receipt** ,  в коллекцию **items**  добавлен массив **labels**, предназначенный для передачи маркировок товаров.
+
+      В случае, если в запросе отсутствуют маркировки для товаров из указанных групп (табачная продукция, алкогольная продукция и другие), сервис ответит ошибкой, чек не будет фискализирован.
+
+x-tagGroups:
+  - name: О сервисе Uzum OFD
+    tags:
+    - Термины и определения
+    - Обновления
+    - Telegram - канал
+  - name: API
+    tags:
+      - Проверка работоспособности
+      - Фискализация чеков
+      - Передача чека  оплаты по QR-коду в налоговую
+  - name: Инструкции
+    tags:
+      - Инструкция по тестированию сервиса ОФД Uzum
+      - Описание параметров запросов
+      - Обработка ошибок сервиса
